@@ -2,16 +2,17 @@
 #include "WiFi.h"          // WiFi Library (you most likely already have this in your sketch)
 #include "WebServer.h"     // Local WebServer used to serve the configuration portal
 
-//32c3 #include "handlemDNS.h"
+#include "handlemDNS.h"
+#include "ESPmDNS.h"
 #include <WiFiUdp.h>
 
 #include "updateOverHTTP.h"
 
 #include "settings.h"
 #include "handleWebServer.h"
-//32c3 #include "handleHTTPClient.h"
+#include "handleHTTPClient.h"
 #include "WiFiSettings.h"
-//32c3 #include <AccelStepper.h>
+#include <AccelStepper.h>
 
 const int motorPin1 = 4;   // IN1
 const int motorPin2 = 5;   // IN2
@@ -60,7 +61,7 @@ uint8_t motorInterfaceType = pSettings->getMotorInterfaceType(); //AccelStepper:
 int16_t motorSpeedStepper = 0;
 int16_t previousMotorSpeedStepper = motorSpeedStepper;
 
-//32c3 AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
+AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
 
 //////////////////////
 // WiFi Definitions //
@@ -71,7 +72,7 @@ WiFiSettings* pWifiSettings = &wifiSettings;
 //////////////////////
 // AsyncHTTPrequest //
 //////////////////////
-// 32c3 asyncHTTPrequest aRequest;
+asyncHTTPrequest aRequest;
 long lastSendMillis;
 
 // detectButtonFlag lets the program know that a network-toggle is going on
@@ -242,7 +243,8 @@ void switchToAccessPoint() {
 
   initServer();
 
-  // 32c3 mDNSnotifyAPChange();
+  // switch, so domain-name has to be found in this domain-realm
+  startmDNS();
   // end domain name server check
 }
 
@@ -259,8 +261,9 @@ void switchToNetwork() {
   delay(pSettings->WAIT_PERIOD);
   initServer();
 
-  // 32c3 mDNSnotifyAPChange();
-
+  // switch, so domain-name has to be found in this domain-realm
+  startmDNS();
+  // end domain name server check
 }
 
 void delayInMillis(uint8_t ms)
@@ -344,7 +347,7 @@ void handleInfo() {
 
   Serial.print("Chip ID: ");
   Serial.print(ESP.getChipModel());
-  Serial.print(" ");
+  Serial.print(".");
   Serial.println(ESP.getChipRevision());
   // 32c3 Serial.println(ESP.getFlashChipId());
  
@@ -530,10 +533,8 @@ void handleRestart() {
   }
 }
 
-// 32c3 
-/*
 void getMDNS() {
-  String firstFreeHostname = findFirstFreeHostname();
+  String firstFreeHostname = String(getFirstFreeHostName("model"));
 
   // used to answer a xhr call from the browser that is connected to the server
   String result = "";
@@ -573,8 +574,7 @@ void getMDNS() {
   server.sendHeader("Access-Control-Allow-Origin", allowServer);
   server.send(200, "text/html", result);
 }
-// 32c3 
-*/
+
 
 void handleRoleModel() {
   //uint8_t argumentCounter = 0;
@@ -999,8 +999,8 @@ void initHardware()
 
   pinMode(BUTTON, INPUT_PULLUP);
 
-  // 32c3 myStepper.setMaxSpeed(maxSpeed);
-  // 32c3 myStepper.setSpeed(0);
+  myStepper.setMaxSpeed(maxSpeed);
+  myStepper.setSpeed(0);
 
 }
 
@@ -1049,7 +1049,7 @@ void initServer()
 
   // handles a check if this url is available
   // remove this when clients are availabe
-  // 32c3 server.on("/_mdns/", getMDNS);
+  server.on("/_mdns/", getMDNS);
 
   server.begin();
   Serial.println("HTTP server started");
@@ -1087,7 +1087,9 @@ void setup()
   }
 
   delay(pSettings->WAIT_PERIOD);
-  // 32c3 startmDNS();
+  // first search for domain-name
+  startmDNS();
+  // end domain name server check
 
   delay(pSettings->WAIT_PERIOD);
 
@@ -1105,9 +1107,6 @@ void setup()
 
 void loop()
 {
-  // update should be run on every loop
-  // 32c3 MDNS.update();
-
   if (detectUpdateFlag == true)
   {
     String result = updateFirmware("latest");
@@ -1136,8 +1135,10 @@ void loop()
     pSettings->saveStartAsAccessPoint();
   }
 
-  // For ESP8266WebServer
+  // For ESP WebServer
   server.handleClient();
+  
+  // test of Preferences, doesn't work proper at this moment (20220420) on esp32c3
   if (millis() - lastSendMillis > pSettings->getSEND_PERIOD())
   {
     preferences1.begin("model");
@@ -1149,34 +1150,29 @@ void loop()
 
       lastSendMillis = millis();
   }
+  
 
   // For handleHTTPClient
   if (WiFi.getMode() == WIFI_STA)
   {
-    /* send data to target server using ESP8266HTTPClient */
+    /* send data to target server using ESP HTTPClient */
     if (millis() - lastSendMillis > pSettings->getSEND_PERIOD())
     {
-      // 32c3 
-      /*
+
       if ((aRequest.readyState() == 0) || (aRequest.readyState() == 4)) {
           sendDataToTarget(&aRequest, wifiClient, pSettings, pWifiSettings, String(WiFi.macAddress()), detectInfoRequest);
           detectInfoRequest = false;    // reset value so no info will be sent again
       }
-      // 32c3 
-      */
+
 
       lastSendMillis = millis();
     }
 
-    // 32c3 
-    /*
     String response = getAsyncResponse(&aRequest);
     if (response != "") 
     {
       processServerData(response);
     }
-    // 32c3 
-    */
   }
 
   // For automatic Reset after loosing WiFi connection in STA mode
@@ -1194,8 +1190,6 @@ void loop()
   }
 
   // Stepper motor
-  // 32c3 
-  /*
   if (motorSpeedStepper > 0) {
 
     myStepper.setSpeed(motorSpeedStepper * direction);
@@ -1205,7 +1199,5 @@ void loop()
     myStepper.setSpeed(0);
   }
   myStepper.runSpeed();
-  // 32c3 
-  */
 
 }

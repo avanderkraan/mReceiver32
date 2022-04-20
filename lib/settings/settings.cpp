@@ -242,9 +242,9 @@ bool Settings::isUpdated() {
         currentMinor = this->preferences.getUChar(MINOR);
         currentPatch = this->preferences.getUShort(PATCH);
         
-        bool result = this->major != currentMajor &&
-                      this->minor != currentMinor &&
-                      this->patch != currentPatch;
+        result = this->major != currentMajor &&
+                 this->minor != currentMinor &&
+                 this->patch != currentPatch;
         this->endNamespace();
     }
     return result;
@@ -257,7 +257,7 @@ bool Settings::isFreshInstallation() {
     bool result = true;  // true means: set default values in preferences
     if (this->setNamespace())
     {
-        this->initNumber == this->preferences.getUChar(INIT_NUMBER);
+        this->initNumber = this->preferences.getUChar(INIT_NUMBER);
         result = (this->initNumber == 0 ||
                   this->initNumber != this->INITCHECK);
         this->endNamespace();
