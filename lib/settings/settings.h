@@ -1,12 +1,13 @@
 #ifndef SETTINGS_H        // To make sure you don't declare the function more than once by including the header multiple times.
 #define SETTINGS_H
-#include "WiFi.h"         // WiFi Library (you most likely already have this in your sketch)
+//#include "WiFi.h"         // WiFi Library (you most likely already have this in your sketch)
 #include "Preferences.h"  // used to store and read settings
 
 class Settings
 {
 public:
   const char * PREFERENCE_NAMESPACE_SETTINGS = "settings";
+  const char * PREFERENCE_LABEL_SETTINGS= "settings";
   const char * INIT_NUMBER = "0";
   const char * DEVICE_KEY = "1";
   const char * LANGUAGE = "2";
@@ -109,14 +110,34 @@ public:
   {
     this->preferences = Preferences();
     //this->initSettings(); // is called through the browser
-    this->setupPreferences();
-    this->setupUpdatedFirmware();
+    // call bootSettings()) from setup() to initialize Settings data
   };
 
   ~Settings()
   {
   };
 
+public:
+/* initialize settings */
+void bootSettings();
+
+void testPreferences()
+{
+  this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);
+
+  this->preferences.putInt("nr2", 3);
+
+  int8_t result = this->preferences.getInt("nr2");
+  this->preferences.putInt("nr3", result + 3);
+
+
+  Serial.println(this->preferences.getInt("nr2"));
+  Serial.println(this->preferences.getInt("nr3"));
+
+
+  this->preferences.end();
+  return;
+}
 private:
   /* set the namespace for the storage */
   bool setNamespace();

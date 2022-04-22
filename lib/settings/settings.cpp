@@ -20,12 +20,18 @@ Bytes	        putBytes(const char* key, const void* value, size_t len)
 
 bool Settings::setNamespace()
 {
-    return this->preferences.begin(PREFERENCE_NAMESPACE_SETTINGS, false, "nvs");  // partition label?
+    return this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);  // partition label?
 }
 
 void Settings::endNamespace()
 {
     this->preferences.end();
+}
+
+void Settings::bootSettings()
+{
+    this->setupPreferences();
+    this->setupUpdatedFirmware();
 }
 
 String Settings::getFirmwareVersion()
@@ -196,9 +202,9 @@ size_t Settings::setupUpdatedFirmware()
     {
         if (this->setNamespace())
         {
-            result += this->preferences.putUChar(MAJOR, this->major);
-            result += this->preferences.putUChar(MINOR, this->minor);
-            result += this->preferences.putUShort(PATCH, this->patch);
+            result += this->preferences.putUChar(this->MAJOR, this->major);
+            result += this->preferences.putUChar(this->MINOR, this->minor);
+            result += this->preferences.putUShort(this->PATCH, this->patch);
             this->endNamespace();
         }
     }
@@ -210,21 +216,21 @@ size_t Settings::saveSettings()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putUChar(INIT_NUMBER, this->initNumber);
-        result += this->preferences.putUChar(MAJOR, this->major);
-        result += this->preferences.putUChar(MINOR, this->minor);
-        result += this->preferences.putUShort(PATCH, this->patch);
-        result += this->preferences.putString(LANGUAGE, this->language);
-        result += this->preferences.putBool(START_AS_ACCESSPOINT, this->startAsAccessPoint);
-        result += this->preferences.putString(TARGET_SERVER, this->targetServer);
-        result += this->preferences.putUShort(TARGET_PORT, this->targetPort);
-        result += this->preferences.putString(TARGET_PATH, this->targetPath);
-        result += this->preferences.putString(ROLEMODEL, this->roleModel);
-        result += this->preferences.putUShort(STEPS_PER_REVOLUTION, this->stepsPerRevolution);
-        result += this->preferences.putUShort(MAXIMUM_SPEED, this->maxSpeed);
-        result += this->preferences.putUChar(DIRECTION, this->direction);
-        result += this->preferences.putUChar(MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
-        result += this->preferences.putString(DEVICE_KEY, this->deviceKey);
+        result += this->preferences.putUChar(this->INIT_NUMBER, this->initNumber);
+        result += this->preferences.putUChar(this->MAJOR, this->major);
+        result += this->preferences.putUChar(this->MINOR, this->minor);
+        result += this->preferences.putUShort(this->PATCH, this->patch);
+        result += this->preferences.putString(this->LANGUAGE, this->language);
+        result += this->preferences.putBool(this->START_AS_ACCESSPOINT, this->startAsAccessPoint);
+        result += this->preferences.putString(this->TARGET_SERVER, this->targetServer);
+        result += this->preferences.putUShort(this->TARGET_PORT, this->targetPort);
+        result += this->preferences.putString(this->TARGET_PATH, this->targetPath);
+        result += this->preferences.putString(this->ROLEMODEL, this->roleModel);
+        result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->stepsPerRevolution);
+        result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->maxSpeed);
+        result += this->preferences.putUChar(this->DIRECTION, this->direction);
+        result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
+        result += this->preferences.putString(this->DEVICE_KEY, this->deviceKey);
         this->endNamespace();
     }
     return result;
@@ -238,9 +244,9 @@ bool Settings::isUpdated() {
         uint8_t currentMinor = this->minor;
         uint16_t currentPatch = this->patch;
 
-        currentMajor = this->preferences.getUChar(MAJOR);
-        currentMinor = this->preferences.getUChar(MINOR);
-        currentPatch = this->preferences.getUShort(PATCH);
+        currentMajor = this->preferences.getUChar(this->MAJOR);
+        currentMinor = this->preferences.getUChar(this->MINOR);
+        currentPatch = this->preferences.getUShort(this->PATCH);
         
         result = this->major != currentMajor &&
                  this->minor != currentMinor &&
@@ -257,7 +263,7 @@ bool Settings::isFreshInstallation() {
     bool result = true;  // true means: set default values in preferences
     if (this->setNamespace())
     {
-        this->initNumber = this->preferences.getUChar(INIT_NUMBER);
+        this->initNumber = this->preferences.getUChar(this->INIT_NUMBER);
         result = (this->initNumber == 0 ||
                   this->initNumber != this->INITCHECK);
         this->endNamespace();
@@ -280,21 +286,21 @@ size_t Settings::initSettings()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putUChar(INIT_NUMBER, this->factoryInitNumber);
-        result += this->preferences.putUChar(MAJOR, this->major);
-        result += this->preferences.putUChar(MINOR, this->minor);
-        result += this->preferences.putUShort(PATCH, this->patch);
-        result += this->preferences.putString(LANGUAGE, this->factoryLanguage);
-        result += this->preferences.putBool(START_AS_ACCESSPOINT, this->factoryStartAsAccessPoint);
-        result += this->preferences.putString(TARGET_SERVER, this->factoryTargetServer);
-        result += this->preferences.putUShort(TARGET_PORT, this->factoryTargetPort);
-        result += this->preferences.putString(TARGET_PATH, this->factoryTargetPath);
-        result += this->preferences.putString(ROLEMODEL, this->factoryRoleModel);
-        result += this->preferences.putUShort(STEPS_PER_REVOLUTION, this->factoryStepsPerRevolution);
-        result += this->preferences.putUShort(MAXIMUM_SPEED, this->factoryMaxSpeed);
-        result += this->preferences.putBool(DIRECTION, this->factoryDirection);
-        result += this->preferences.putUChar(MOTOR_INTERFACE_TYPE, this->factoryMotorInterfaceType);
-        result += this->preferences.putString(DEVICE_KEY, this->factoryDeviceKey);
+        result += this->preferences.putUChar(this->INIT_NUMBER, this->factoryInitNumber);
+        result += this->preferences.putUChar(this->MAJOR, this->major);
+        result += this->preferences.putUChar(this->MINOR, this->minor);
+        result += this->preferences.putUShort(this->PATCH, this->patch);
+        result += this->preferences.putString(this->LANGUAGE, this->factoryLanguage);
+        result += this->preferences.putBool(this->START_AS_ACCESSPOINT, this->factoryStartAsAccessPoint);
+        result += this->preferences.putString(this->TARGET_SERVER, this->factoryTargetServer);
+        result += this->preferences.putUShort(this->TARGET_PORT, this->factoryTargetPort);
+        result += this->preferences.putString(this->TARGET_PATH, this->factoryTargetPath);
+        result += this->preferences.putString(this->ROLEMODEL, this->factoryRoleModel);
+        result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->factoryStepsPerRevolution);
+        result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->factoryMaxSpeed);
+        result += this->preferences.putBool(this->DIRECTION, this->factoryDirection);
+        result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->factoryMotorInterfaceType);
+        result += this->preferences.putString(this->DEVICE_KEY, this->factoryDeviceKey);
 
         this->endNamespace();
     }
@@ -306,21 +312,21 @@ bool Settings::getSettings()
     bool result = false;
     if (this->setNamespace())
     {
-        this->initNumber = this->preferences.getUChar(INIT_NUMBER);
-        this->major = this->preferences.getUChar(MAJOR);
-        this->minor = this->preferences.getUChar(MINOR);
-        this->patch = this->preferences.getUShort(PATCH);
-        this->language = this->preferences.getString(LANGUAGE);
-        this->startAsAccessPoint = this->preferences.getBool(START_AS_ACCESSPOINT);
-        this->targetServer = this->preferences.getString(TARGET_SERVER);
-        this->targetPort = this->preferences.getUShort(TARGET_PORT);
-        this->targetPath = this->preferences.getString(TARGET_PATH);
-        this->roleModel = this->preferences.getString(ROLEMODEL);
-        this->stepsPerRevolution = this->preferences.getUShort(STEPS_PER_REVOLUTION);
-        this->maxSpeed = this->preferences.getUShort(MAXIMUM_SPEED);
-        this->direction = this->preferences.getBool(DIRECTION);
-        this->motorInterfaceType = this->preferences.getUChar(MOTOR_INTERFACE_TYPE);
-        this->deviceKey = this->preferences.getString(DEVICE_KEY);
+        this->initNumber = this->preferences.getUChar(this->INIT_NUMBER);
+        this->major = this->preferences.getUChar(this->MAJOR);
+        this->minor = this->preferences.getUChar(this->MINOR);
+        this->patch = this->preferences.getUShort(this->PATCH);
+        this->language = this->preferences.getString(this->LANGUAGE);
+        this->startAsAccessPoint = this->preferences.getBool(this->START_AS_ACCESSPOINT);
+        this->targetServer = this->preferences.getString(this->TARGET_SERVER);
+        this->targetPort = this->preferences.getUShort(this->TARGET_PORT);
+        this->targetPath = this->preferences.getString(this->TARGET_PATH);
+        this->roleModel = this->preferences.getString(this->ROLEMODEL);
+        this->stepsPerRevolution = this->preferences.getUShort(this->STEPS_PER_REVOLUTION);
+        this->maxSpeed = this->preferences.getUShort(this->MAXIMUM_SPEED);
+        this->direction = this->preferences.getBool(this->DIRECTION);
+        this->motorInterfaceType = this->preferences.getUChar(this->MOTOR_INTERFACE_TYPE);
+        this->deviceKey = this->preferences.getString(this->DEVICE_KEY);
 
         this->endNamespace();
         result = true;
@@ -333,7 +339,7 @@ size_t Settings::saveDeviceKey()
     size_t result = 0;
     if (this-setNamespace())
     {
-        result += this->preferences.putString(DEVICE_KEY, this->deviceKey);
+        result += this->preferences.putString(this->DEVICE_KEY, this->deviceKey);
         this->endNamespace();
     }
     return result;
@@ -344,7 +350,7 @@ size_t Settings::saveRoleModelSetting()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putString(ROLEMODEL, this->roleModel);
+        result += this->preferences.putString(this->ROLEMODEL, this->roleModel);
         this->endNamespace();
     }
     return result;
@@ -355,7 +361,7 @@ size_t Settings::saveStartAsAccessPoint()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putBool(START_AS_ACCESSPOINT, this->startAsAccessPoint);
+        result += this->preferences.putBool(this->START_AS_ACCESSPOINT, this->startAsAccessPoint);
         this->endNamespace();
     }
     return result;
@@ -366,9 +372,9 @@ size_t Settings::saveTargetServerStuff()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putString(TARGET_SERVER, this->targetServer);
-        result += this->preferences.putUShort(TARGET_PORT, this->targetPort);
-        result += this->preferences.putString(TARGET_PATH, this->targetPath);
+        result += this->preferences.putString(this->TARGET_SERVER, this->targetServer);
+        result += this->preferences.putUShort(this->TARGET_PORT, this->targetPort);
+        result += this->preferences.putString(this->TARGET_PATH, this->targetPath);
         this->endNamespace();
     }
     return result;
@@ -379,10 +385,10 @@ size_t Settings::saveMotorSettings()
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putUShort(STEPS_PER_REVOLUTION, this->stepsPerRevolution);
-        result += this->preferences.putUShort(MAXIMUM_SPEED, this->maxSpeed);
-        result += this->preferences.putBool(DIRECTION, this->direction);
-        result += this->preferences.putUChar(MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
+        result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->stepsPerRevolution);
+        result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->maxSpeed);
+        result += this->preferences.putBool(this->DIRECTION, this->direction);
+        result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
         this->endNamespace();
     }
     return result;
@@ -439,7 +445,7 @@ size_t Settings::setLanguage(String language)
     if (this->setNamespace())
     {
         this->language = language;
-        result += this->preferences.putString(LANGUAGE, this->language);
+        result += this->preferences.putString(this->LANGUAGE, this->language);
         this->endNamespace();
     }
     return result;

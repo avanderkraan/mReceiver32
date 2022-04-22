@@ -50,7 +50,7 @@ String INDEPENDENT = "independent"; // means that motor is driven independent of
 Settings settings = Settings();
 Settings* pSettings = &settings;
 
-Preferences preferences1 = Preferences();
+//Preferences preferences1 = Preferences();
 
 // stepsPerrevolution, maxSpeed, direction, motorInterfaceType are coming from settings/database
 // stepsPerRevolution for your motor 28BYJ-48 is 2038 for FULLxWIRE
@@ -61,7 +61,7 @@ uint8_t motorInterfaceType = pSettings->getMotorInterfaceType(); //AccelStepper:
 int16_t motorSpeedStepper = 0;
 int16_t previousMotorSpeedStepper = motorSpeedStepper;
 
-AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
+//32c3 AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
 
 //////////////////////
 // WiFi Definitions //
@@ -140,7 +140,8 @@ void setupWiFi(){
   String myssid = pWifiSettings->readAccessPointSSID();
   String mypass = pWifiSettings->readAccessPointPassword();
 
-  if (myssid == "")
+  Serial.println(WiFi.macAddress());
+  if ((myssid == String("")) || (myssid == String("ESP-")))
   {
     myssid = "ESP-" + WiFi.macAddress();
     pWifiSettings->setAccessPointSSID(myssid);
@@ -151,8 +152,10 @@ void setupWiFi(){
   IPAddress subnet(255,255,255,0);
 
   Serial.print("Setting soft-AP ... ");
+
   // mypass needs minimum of 8 characters, otherwise it shall fail !
-  Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str(),3,0) ? "Ready" : "Failed!");
+  //Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str(),3,0) ? "Ready" : "Failed!");
+  Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str(),3,0,4) ? "Ready" : "Failed!");
   Serial.print("Setting soft-AP configuration ... ");
   Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
   Serial.print("Connecting to AP mode");
@@ -999,8 +1002,8 @@ void initHardware()
 
   pinMode(BUTTON, INPUT_PULLUP);
 
-  myStepper.setMaxSpeed(maxSpeed);
-  myStepper.setSpeed(0);
+  //32c3 myStepper.setMaxSpeed(maxSpeed);
+  //32c3 myStepper.setSpeed(0);
 
 }
 
@@ -1069,6 +1072,8 @@ void setup()
   /* It seems to help preventing ESPerror messages with mode(3,6) when
   using a delay */
   initHardware();
+  pSettings->bootSettings();
+  pWifiSettings->bootWiFi();
 
    // see https://forum.arduino.cc/index.php?topic=121654.0 voor circuit brownout
   delay(pSettings->WAIT_PERIOD);
@@ -1088,7 +1093,7 @@ void setup()
 
   delay(pSettings->WAIT_PERIOD);
   // first search for domain-name
-  startmDNS();
+  //startmDNS();
   // end domain name server check
 
   delay(pSettings->WAIT_PERIOD);
@@ -1138,6 +1143,7 @@ void loop()
   // For ESP WebServer
   server.handleClient();
   
+  /*
   // test of Preferences, doesn't work proper at this moment (20220420) on esp32c3
   if (millis() - lastSendMillis > pSettings->getSEND_PERIOD())
   {
@@ -1150,6 +1156,7 @@ void loop()
 
       lastSendMillis = millis();
   }
+  */
   
 
   // For handleHTTPClient
@@ -1192,12 +1199,12 @@ void loop()
   // Stepper motor
   if (motorSpeedStepper > 0) {
 
-    myStepper.setSpeed(motorSpeedStepper * direction);
+    //32c3 myStepper.setSpeed(motorSpeedStepper * direction);
   }
   else
   {
-    myStepper.setSpeed(0);
+    //32c3 myStepper.setSpeed(0);
   }
-  myStepper.runSpeed();
+  //32c3 myStepper.runSpeed();
 
 }

@@ -7,6 +7,7 @@ class WiFiSettings
 {
 public:
   const char * PREFERENCE_NAMESPACE_WIFI = "wifi";
+  const char * PREFERENCE_LABEL_WIFI = "nvs";  // seems to be nvs and nothing else for WiFi
   const char * SSID_ACCESSPOINT = "10";
   const char * PASSWORD_ACCESSPOINT = "11";
   const char * SSID_STATION = "12";
@@ -41,23 +42,18 @@ public:
   WiFiSettings()
   {
     this->preferences = Preferences();
+
     // Storage for AP and Network SSID, plus AP and Network Password
     // assume fresh start if key SSID_ACCESSPOINT is not present
-    if (this->setNamespace())
-    {
-        if (this->preferences.getString(PASSWORD_ACCESSPOINT) == "")
-        {
-          this->endNamespace();
-          this->setAccessPointSSID(String("ESP-" + WiFi.softAPmacAddress()));
-          this->setAccessPointPassword(this->passwordAccessPoint);
-          this->saveAuthorizationAccessPoint();
-        }
-    }
+    // call bootWiFi() from setup() to initialize WiFi data
   };
 
   ~WiFiSettings()
   {
   };
+
+  /* initialize WiFiSettings with WiFi data */
+  void bootWiFi();
 
   /* set the namespace for the storage */
   bool setNamespace();

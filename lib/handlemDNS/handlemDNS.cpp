@@ -11,15 +11,18 @@ const char * getFirstFreeHostName(const char * hostName)
     for (int i = 0; i < nrOfServices; i++)
     {
         indexedHostName = String(hostName) + "-" + String(i);
-        Serial.println(MDNS.queryHost(indexedHostName));
-        IPAddress ipHost = MDNS.queryHost(indexedHostName.c_str());
-        Serial.println(ipHost.toString());
+        IPAddress ipHost = MDNS.queryHost(indexedHostName);
+        //Serial.println(ipHost.toString());
         if (ipHost)
         {
             index+=1;
         }
     }
-    firstFreeHostName = String(hostName) + "-" + String(index);
+    firstFreeHostName = String(hostName);
+    if (index > 0)
+    {
+        firstFreeHostName = String(hostName) + "-" + String(index);
+    }
     return firstFreeHostName.c_str();
 }
 
@@ -34,7 +37,7 @@ bool startmDNS()
         }
     }
     Serial.println("MDNS responder started");
-    result = (MDNS.addService("http", "tcp", 80) && _setStationHostname());
+    //result = (MDNS.addService("http", "tcp", 80) && _setStationHostname());
     return result;
 }
 

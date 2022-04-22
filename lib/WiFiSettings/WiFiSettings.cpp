@@ -2,7 +2,8 @@
 
 bool WiFiSettings::setNamespace()
 {
-    return this->preferences.begin(PREFERENCE_NAMESPACE_WIFI, false, "nvs");  // partition label?
+    
+    return this->preferences.begin(this->PREFERENCE_NAMESPACE_WIFI, false, this->PREFERENCE_LABEL_WIFI);  // partition label?
 }
 
 void WiFiSettings::endNamespace()
@@ -10,13 +11,28 @@ void WiFiSettings::endNamespace()
     this->preferences.end();
 }
 
+void WiFiSettings::bootWiFi()
+{
+    if (this->preferences.begin(this->PREFERENCE_NAMESPACE_WIFI, false, this->PREFERENCE_LABEL_WIFI))
+    {
+        String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT, "");
+        this->preferences.end();
+        if (_password.length() < 8) //this->preferences.getString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint))
+        {
+          this->setAccessPointSSID(String("ESP-") + WiFi.softAPmacAddress());
+          this->setAccessPointPassword(this->passwordAccessPoint);
+          this->saveAuthorizationAccessPoint();
+        }
+    }
+}
+
 size_t WiFiSettings::saveAuthorizationAccessPoint()
 {
     size_t result = 0;
     if (this->setNamespace())
     {
-        result += this->preferences.putString(SSID_ACCESSPOINT, this->ssidAccessPoint);
-        result += this->preferences.putString(PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
+        result += this->preferences.putString(this->SSID_ACCESSPOINT, this->ssidAccessPoint);
+        result += this->preferences.putString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
 
         //char myssidAccessPoint[33];  // one more for the null character
         //char myPasswordAccessPoint[33];  // one more for the null character
@@ -28,10 +44,12 @@ size_t WiFiSettings::saveAuthorizationAccessPoint()
 size_t WiFiSettings::saveAuthorizationNetwork()
 {
     size_t result = 0;
+    Serial.println("wifisettings");
+    delay(3000);
     if (this->setNamespace())
     {
-        result += this->preferences.putString(SSID_STATION, this->ssidNetwork);
-        result += this->preferences.putString(PASSWORD_STATION, this->passwordNetwork);
+        result += this->preferences.putString(this->SSID_STATION, this->ssidNetwork);
+        result += this->preferences.putString(this->PASSWORD_STATION, this->passwordNetwork);
 
         //char myssidNetwork[33];  // one more for the null character
         //char myPasswordNetwork[33];  // one more for the null character
@@ -60,8 +78,8 @@ bool WiFiSettings::eraseAccessPointSettings() {
     {
         this->passwordAccessPoint = "";
         this->ssidAccessPoint = "";
-        result = (this->preferences.remove(SSID_ACCESSPOINT) &&
-                  this->preferences.remove(PASSWORD_ACCESSPOINT));
+        result = (this->preferences.remove(this->SSID_ACCESSPOINT) &&
+                  this->preferences.remove(this->PASSWORD_ACCESSPOINT));
         this->endNamespace();
     }
     return result;
@@ -73,8 +91,8 @@ bool WiFiSettings::eraseNetworkSettings() {
     {
         this->passwordNetwork = "";
         this->ssidNetwork = "";
-        result = (this->preferences.remove(SSID_STATION) &&
-                  this->preferences.remove(PASSWORD_STATION));
+        result = (this->preferences.remove(this->SSID_STATION) &&
+                  this->preferences.remove(this->PASSWORD_STATION));
         this->endNamespace();
     }
     return result;
@@ -142,16 +160,11 @@ String WiFiSettings::getNetworkPassword()
 
 String WiFiSettings::readAccessPointSSID()
 {
-    Serial.println("bij readAccessPointSSID");
-    Serial.println(this->preferences.freeEntries());
-    Serial.println(this->setNamespace());
-    Serial.println("bij readAccessPointSSID");
-
     String result = "";
     if (this->setNamespace())
     {
         //char myAccessPointSSID[33];
-        result = this->preferences.getString(SSID_ACCESSPOINT, "");
+        result = this->preferences.getString(this->SSID_ACCESSPOINT, "ssid");
         this->endNamespace();
     }
     return result;
@@ -163,11 +176,7 @@ String WiFiSettings::readAccessPointPassword()
     if (this->setNamespace())
     {
         //char myAccessPointPassword[33];
-        result = this->preferences.getString(PASSWORD_ACCESSPOINT, "");
-        Serial.print("bij readAccessPointPassword");
-        Serial.println(sizeof(result));
-        Serial.println(result);
-        Serial.print("bij readAccessPointPassword");
+        result = this->preferences.getString(this->PASSWORD_ACCESSPOINT, "");
         this->endNamespace();
     }
     return result;
@@ -178,8 +187,7 @@ String WiFiSettings::readNetworkSSID()
     String result = "";
     if (this->setNamespace())
     {
-        //char myNetworkSSID[33];
-        result = this->preferences.getString(SSID_STATION, "");
+        result = this->preferences.getString(this->SSID_STATION, "");
         this->endNamespace();
     }
     return result;
@@ -191,7 +199,7 @@ String WiFiSettings::readNetworkPassword()
     if (this->setNamespace())
     {
         //char myNetworkPassword[33];
-        result = this->preferences.getString(PASSWORD_STATION, "");
+        result = this->preferences.getString(this->PASSWORD_STATION, "");
         this->endNamespace();
     }
     return result;
