@@ -23,11 +23,14 @@ private:
   /* maximum length of SSID Name string, excluding NULL character */
   const uint8_t MAX_SSID = 32;
   
+  /* minumum length of password string, excluding NULL character */
+  const uint8_t MIN_PASSWORD = 8;
+
   /* maximun length of password string, excluding NULL character */
   const uint8_t MAX_PASSWORD = 32;
   
   /* SSID */
-  String ssidAccessPoint = "";
+  String ssidAccessPoint = "ESP-";
 
   /* Password */
   String passwordAccessPoint = "administrator";

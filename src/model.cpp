@@ -14,10 +14,31 @@
 #include "WiFiSettings.h"
 #include <AccelStepper.h>
 
-const int motorPin1 = 4;   // IN1
-const int motorPin2 = 5;   // IN2
-const int motorPin3 = 6;   // IN3
-const int motorPin4 = 7;   // IN4
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO:       A4(SDA), A5(SCL)
+// On an arduino MEGA 2560: 20(SDA), 21(SCL)
+// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+#define I2C_SDA 23 // Wire SDA
+#define I2C_SCL 22 // Wire SCL
+
+const int motorPin1 = 27; //4;   // IN1
+const int motorPin2 = 26; //5;   // IN2
+const int motorPin3 = 25; //6;   // IN3
+const int motorPin4 = 33; //7;   // IN4
 
 // WIFI URL: http://192.168.4.1/ or http://model.local/
 /////////////////////
@@ -28,7 +49,7 @@ const int motorPin4 = 7;   // IN4
 
 const uint8_t BUTTON = 0;           // was D8 // Digital pin to read button-push
 
-const uint8_t ACCESSPOINT_LED = 3;  // was D1 
+const uint8_t ACCESSPOINT_LED = 4; //3;  // was D1 
 const uint8_t STATION_LED = 2;      // was D2
 
 // variables for reset to STA mode
@@ -61,7 +82,7 @@ uint8_t motorInterfaceType = pSettings->getMotorInterfaceType(); //AccelStepper:
 int16_t motorSpeedStepper = 0;
 int16_t previousMotorSpeedStepper = motorSpeedStepper;
 
-//32c3 AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
+AccelStepper myStepper = AccelStepper(motorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
 
 //////////////////////
 // WiFi Definitions //
@@ -132,35 +153,63 @@ void initSettings() {
 }
 // end Settings and EEPROM stuff
 
+String IPAddress2String(const IPAddress &ipAddress)
+{
+  return String(ipAddress[0]) + String(".") +\
+         String(ipAddress[1]) + String(".") +\
+         String(ipAddress[2]) + String(".") +\
+         String(ipAddress[3]);
+}
+
+void show(bool clear, String message, int16_t x, int16_t y)
+{
+  if (clear == true)
+  { // Clear the buffer
+    display.clearDisplay();
+    delay(2000);
+  }
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(x, y);
+  display.cp437(true);
+  display.println(message);
+  display.display();
+}
+
 void setupWiFi(){
   digitalWrite(STATION_LED, HIGH);
   digitalWrite(ACCESSPOINT_LED, HIGH);
-
   WiFi.mode(WIFI_AP);
+
   String myssid = pWifiSettings->readAccessPointSSID();
   String mypass = pWifiSettings->readAccessPointPassword();
 
-  Serial.println(WiFi.macAddress());
-  if ((myssid == String("")) || (myssid == String("ESP-")))
+  if ((myssid == "") || (myssid == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
-    myssid = "ESP-" + WiFi.macAddress();
+    myssid = String("ESP-")+ WiFi.softAPmacAddress();
     pWifiSettings->setAccessPointSSID(myssid);
+    pWifiSettings->setAccessPointPassword(mypass);
+    pWifiSettings->saveAuthorizationAccessPoint();
   }
-
   IPAddress local_IP(192,168,4,1);
   IPAddress gateway(192,168,4,1);
   IPAddress subnet(255,255,255,0);
 
   Serial.print("Setting soft-AP ... ");
+  Serial.println(WiFi.softAPSSID());
 
-  // mypass needs minimum of 8 characters, otherwise it shall fail !
-  //Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str(),3,0) ? "Ready" : "Failed!");
-  Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str(),3,0,4) ? "Ready" : "Failed!");
-  Serial.print("Setting soft-AP configuration ... ");
-  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
   Serial.print("Connecting to AP mode");
 
+  // do NOT add more parameters to softAP, otherwise changing password will result in an error
+  // mypass needs minimum of 8 characters, otherwise it shall fail !
+  Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str()) ? "Ready" : "Failed!");
+
+
+  Serial.print("Setting soft-AP configuration ... ");
+  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
+
   delay(500);
+
   Serial.print("Soft-AP IP address = ");
   Serial.println(WiFi.softAPIP());
   Serial.println(WiFi.softAPmacAddress());
@@ -168,6 +217,7 @@ void setupWiFi(){
   digitalWrite(ACCESSPOINT_LED, HIGH);
   digitalWrite(STATION_LED, LOW);
 
+  show(true, IPAddress2String(WiFi.softAPIP()), 0, 0);
   pSettings->beginAsAccessPoint(true);
 }
 
@@ -181,6 +231,7 @@ void setupWiFiManager () {
   if (mynetworkssid != "") {
     String mynetworkpass = pWifiSettings->readNetworkPassword();
     WiFi.mode(WIFI_STA);
+
     WiFi.begin(mynetworkssid.c_str(), mynetworkpass.c_str()); 
 
     Serial.print("Connecting to a WiFi Network");
@@ -205,6 +256,7 @@ void setupWiFiManager () {
 
       digitalWrite(ACCESSPOINT_LED, LOW);
       digitalWrite(STATION_LED, HIGH);
+      show(true, IPAddress2String(WiFi.localIP()), 0, 0);
       pSettings->beginAsAccessPoint(false);
     }
   }
@@ -596,7 +648,8 @@ void handleRoleModel() {
         }
         else{
           roleModel = server.arg(i);
-        }   
+        }
+        show(false, pSettings->getRoleModel(), 0, 10);   
       }
       if (roleModel == INDEPENDENT)
       {
@@ -993,6 +1046,73 @@ void toggleWiFi()
   }
 }
 
+void initWire()
+{
+  Wire.begin(I2C_SDA, I2C_SCL);
+  while (!Serial);   // waiting on serial monitor
+  Serial.println("\nI2C scanner");
+
+  byte error, address;
+  int nDevices = 0;
+
+  for (address = 1; address < 127; address++)
+  {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0)
+    {
+      Serial.print("I2C device found on 0x");
+      if (address < 16)
+      {
+        Serial.print("0");
+      }
+      Serial.print(address, HEX);
+      Serial.println(" !");
+      nDevices++;
+    }
+    else if (error == 4)
+    {
+      Serial.println("unknown error");
+    }
+  }
+  if (nDevices == 0)
+  {
+    Serial.println("No devices found");
+  }
+
+}
+
+void initOled()
+{
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
+  // Clear the buffer
+  display.clearDisplay();
+
+  // Draw a single pixel in white
+  display.drawPixel(0, 0, SSD1306_WHITE);
+  display.drawPixel(5, 5, SSD1306_WHITE);
+  // Show the display buffer on the screen. You MUST call display() after
+  // drawing commands to make them visible on screen!
+  display.display();
+  delay(2000);
+  // display.display() is NOT necessary after every single drawing command,
+  // unless that's what you want...rather, you can batch up a bunch of
+  // drawing operations and then update the screen all at once by calling
+  // display.display(). These examples demonstrate both approaches...
+
+}
+
 void initHardware()
 {
   Serial.begin(115200);
@@ -1002,8 +1122,8 @@ void initHardware()
 
   pinMode(BUTTON, INPUT_PULLUP);
 
-  //32c3 myStepper.setMaxSpeed(maxSpeed);
-  //32c3 myStepper.setSpeed(0);
+  myStepper.setMaxSpeed(maxSpeed);
+  myStepper.setSpeed(0);
 
 }
 
@@ -1065,6 +1185,8 @@ void checkSpinValue()
   {
     motorSpeedStepper = maxSpeed;
   }
+  show(false, pSettings->getRoleModel(), 0, 10);
+
 }
 
 void setup()
@@ -1072,6 +1194,8 @@ void setup()
   /* It seems to help preventing ESPerror messages with mode(3,6) when
   using a delay */
   initHardware();
+  initWire();
+  initOled();
   pSettings->bootSettings();
   pWifiSettings->bootWiFi();
 
@@ -1093,7 +1217,7 @@ void setup()
 
   delay(pSettings->WAIT_PERIOD);
   // first search for domain-name
-  //startmDNS();
+  startmDNS();
   // end domain name server check
 
   delay(pSettings->WAIT_PERIOD);
@@ -1199,12 +1323,12 @@ void loop()
   // Stepper motor
   if (motorSpeedStepper > 0) {
 
-    //32c3 myStepper.setSpeed(motorSpeedStepper * direction);
+    myStepper.setSpeed(motorSpeedStepper * direction);
   }
   else
   {
-    //32c3 myStepper.setSpeed(0);
+    myStepper.setSpeed(0);
   }
-  //32c3 myStepper.runSpeed();
+  myStepper.runSpeed();
 
 }

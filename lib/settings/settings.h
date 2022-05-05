@@ -33,8 +33,8 @@ public:
 private:
   /* 4 bytes to store, version of this firmware */
   uint8_t major = 0;   // max 2^8 = 256
-  uint8_t minor = 2;   // max 2^8 = 256
-  uint16_t patch = 2;  // max 2^16 = 65536
+  uint8_t minor = 1;   // max 2^8 = 256
+  uint16_t patch = 0;  // max 2^16 = 65536
 
   /* data in the non-volatile-storage partition */
   Preferences preferences;
@@ -121,23 +121,6 @@ public:
 /* initialize settings */
 void bootSettings();
 
-void testPreferences()
-{
-  this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);
-
-  this->preferences.putInt("nr2", 3);
-
-  int8_t result = this->preferences.getInt("nr2");
-  this->preferences.putInt("nr3", result + 3);
-
-
-  Serial.println(this->preferences.getInt("nr2"));
-  Serial.println(this->preferences.getInt("nr3"));
-
-
-  this->preferences.end();
-  return;
-}
 private:
   /* set the namespace for the storage */
   bool setNamespace();

@@ -627,7 +627,7 @@ void wifi(WebServer &server, Settings * pSettings, WiFiSettings * pWiFiSettings)
   //result += "  SSID: <input type=\"text\" name=\"ssid\" maxlength=\"32\" size=\"33\" placeholder=\"";
   result += "  SSID: ";
   //result += "  SSID: <input type=\"text\" name=\"ssid\" maxlength=\"32\" size=\"33\" placeholder=\"";
-  if (pWiFiSettings->getAccessPointSSID() == "")
+  if ((pWiFiSettings->getAccessPointSSID() == "") || (pWiFiSettings->getAccessPointSSID() == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
     result += "ESP-" + WiFi.softAPmacAddress();
   }
@@ -640,6 +640,7 @@ void wifi(WebServer &server, Settings * pSettings, WiFiSettings * pWiFiSettings)
   //result += "\">\r\n";
   result += "  <br>\r\n";
   result += "  Password: <input type=\"password\" name=\"password\" maxlength=\"32\" size=\"33\" placeholder=\"";
+  //result += "  Password: <input type=\"password\" name=\"password\" maxlength=\"32\" size=\"33\" disabled=\"disabled\" placeholder=\"";
   if (pWiFiSettings->getAccessPointPassword() == "")
   {
     result += "administrator";
@@ -1114,7 +1115,7 @@ void wifi_nl(WebServer &server, Settings * pSettings, WiFiSettings * pWiFiSettin
   result += "  <br>\r\n";
   result += "  SSID: ";
   //result += "  SSID: <input type=\"text\" name=\"ssid\" maxlength=\"32\" size=\"33\" placeholder=\"";
-  if (pWiFiSettings->getAccessPointSSID() == "")
+  if ((pWiFiSettings->getAccessPointSSID() == "") || (pWiFiSettings->getAccessPointSSID() == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
     result += "ESP-" + WiFi.softAPmacAddress();
   }
@@ -1127,6 +1128,7 @@ void wifi_nl(WebServer &server, Settings * pSettings, WiFiSettings * pWiFiSettin
   //result += "\">\r\n";
   result += "  <br>\r\n";
   result += "  Wachtwoord: <input type=\"password\" name=\"password\" maxlength=\"32\" size=\"33\" placeholder=\"";
+  //result += "  Wachtwoord: <input type=\"password\" name=\"password\" maxlength=\"32\" size=\"33\" disabled=\"disabled\" placeholder=\"";
   if (pWiFiSettings->getAccessPointPassword() == "")
   {
     result += "administrator";

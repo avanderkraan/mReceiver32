@@ -20,16 +20,17 @@ Bytes	        putBytes(const char* key, const void* value, size_t len)
 
 bool Settings::setNamespace()
 {
-    return this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);  // partition label?
+  return this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);  // partition label?
 }
 
 void Settings::endNamespace()
 {
-    this->preferences.end();
+  this->preferences.end();
 }
 
 void Settings::bootSettings()
 {
+// this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);  // partition label?
     this->setupPreferences();
     this->setupUpdatedFirmware();
 }
@@ -339,8 +340,12 @@ size_t Settings::saveDeviceKey()
     size_t result = 0;
     if (this-setNamespace())
     {
+      if (this->deviceKey != this->preferences.getString(this->DEVICE_KEY))
+      {
+        this->preferences.remove(this->DEVICE_KEY);
         result += this->preferences.putString(this->DEVICE_KEY, this->deviceKey);
-        this->endNamespace();
+      }
+      this->endNamespace();
     }
     return result;
 }
@@ -350,8 +355,12 @@ size_t Settings::saveRoleModelSetting()
     size_t result = 0;
     if (this->setNamespace())
     {
+      if (this->roleModel != this->preferences.getString(this->ROLEMODEL))
+      {
+        this->preferences.remove(this->ROLEMODEL);
         result += this->preferences.putString(this->ROLEMODEL, this->roleModel);
-        this->endNamespace();
+      }
+      this->endNamespace();
     }
     return result;
 }
@@ -372,10 +381,18 @@ size_t Settings::saveTargetServerStuff()
     size_t result = 0;
     if (this->setNamespace())
     {
+      if (this->targetServer != this->preferences.getString(this->TARGET_SERVER))
+      {
+        this->preferences.remove(this->TARGET_SERVER);
         result += this->preferences.putString(this->TARGET_SERVER, this->targetServer);
-        result += this->preferences.putUShort(this->TARGET_PORT, this->targetPort);
+      }
+      result += this->preferences.putUShort(this->TARGET_PORT, this->targetPort);
+      if (this->targetPath != this->preferences.getString(this->TARGET_PATH))
+      {
+        this->preferences.remove(this->TARGET_PATH);
         result += this->preferences.putString(this->TARGET_PATH, this->targetPath);
-        this->endNamespace();
+      }
+      this->endNamespace();
     }
     return result;
 }
@@ -444,9 +461,13 @@ size_t Settings::setLanguage(String language)
     size_t result = 0;
     if (this->setNamespace())
     {
-        this->language = language;
+      this->language = language;
+      if (this->language != this->preferences.getString(this->LANGUAGE))
+      {
+        this->preferences.remove(this->LANGUAGE);
         result += this->preferences.putString(this->LANGUAGE, this->language);
-        this->endNamespace();
+      }
+      this->endNamespace();
     }
     return result;
 }
