@@ -20,6 +20,16 @@
 #include <Adafruit_I2CDevice.h>
 #include <Adafruit_SSD1306.h>
 
+// workaround to prevent brownout detecting when starting WiFi is to 
+// NOT detect brownout
+// https://arduino.stackexchange.com/questions/76690/esp32-brownout-detector-was-triggered-upon-wifi-begin
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+// in setup() : WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+
+#include <nvs.h>
+#include <nvs_flash.h>
+
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
@@ -34,6 +44,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define I2C_SDA 23 // Wire SDA
 #define I2C_SCL 22 // Wire SCL
+
+bool hasI2C = false;
 
 const int motorPin1 = 27; //4;   // IN1
 const int motorPin2 = 26; //5;   // IN2
@@ -129,6 +141,46 @@ void toggleWiFi();
 WebServer server(80);
 WiFiClient wifiClient;
 
+
+esp_err_t nvs_secure_initialize() {
+    static const char *nvs_tag = "nvs";
+    esp_err_t err = ESP_OK;
+
+    // 1. find partition with nvs_keys
+    const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
+                                                                ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS,
+                                                                "nvs_key");
+    if (partition == NULL) {
+        ESP_LOGE(nvs_tag, "Could not locate nvs_key partition. Aborting.");
+        return ESP_FAIL;
+    }
+
+    // 2. read nvs_keys from key partition
+    nvs_sec_cfg_t cfg;
+    if (ESP_OK != (err = nvs_flash_read_security_cfg(partition, &cfg))) {
+        ESP_LOGE(nvs_tag, "Failed to read nvs keys (rc=0x%x)", err);
+        return err;
+    }
+
+    // 3. initialize nvs partition
+    if (ESP_OK != (err = nvs_flash_secure_init(&cfg))) {
+        ESP_LOGE(nvs_tag, "failed to initialize nvs partition (err=0x%x). Aborting.", err);
+        return err;
+    };
+
+    return err;
+}
+
+void init_nvs_security()
+{
+    esp_err_t err = nvs_secure_initialize();
+    if (err != ESP_OK) {
+        ESP_LOGE("main", "Failed to initialize nvs (rc=0x%x). Halting.", err);
+        while(1) { vTaskDelay(100); }
+    }
+}
+
+
 // start Settings and EEPROM stuff
 void saveSettings() {
   pSettings->saveSettings();
@@ -163,27 +215,36 @@ String IPAddress2String(const IPAddress &ipAddress)
 
 void show(bool clear, String message, int16_t x, int16_t y)
 {
-  if (clear == true)
-  { // Clear the buffer
-    display.clearDisplay();
-    delay(2000);
+  if (hasI2C)
+  {
+    if (clear == true)
+    { // Clear the buffer
+      display.clearDisplay();
+      delay(2000);
+    }
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(x, y);
+    display.cp437(true);
+    display.println(message);
+    display.display();
   }
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(x, y);
-  display.cp437(true);
-  display.println(message);
-  display.display();
 }
 
 void setupWiFi(){
   digitalWrite(STATION_LED, HIGH);
   digitalWrite(ACCESSPOINT_LED, HIGH);
-  WiFi.mode(WIFI_AP);
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
+  WiFi.mode(WIFI_MODE_AP);
+  Serial.println(WiFi.getMode());
   String myssid = pWifiSettings->readAccessPointSSID();
   String mypass = pWifiSettings->readAccessPointPassword();
 
+  Serial.println(myssid);
+  Serial.println(mypass);
+  Serial.println(WiFi.softAPmacAddress());
+  Serial.println(WiFi.macAddress());
   if ((myssid == "") || (myssid == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
     myssid = String("ESP-")+ WiFi.softAPmacAddress();
@@ -196,44 +257,49 @@ void setupWiFi(){
   IPAddress subnet(255,255,255,0);
 
   Serial.print("Setting soft-AP ... ");
-  Serial.println(WiFi.softAPSSID());
+  //Serial.println(WiFi.softAPSSID());
 
+ 
+  Serial.print("Setting soft-AP configuration ... ");
+  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
+  
   Serial.print("Connecting to AP mode");
-
   // do NOT add more parameters to softAP, otherwise changing password will result in an error
   // mypass needs minimum of 8 characters, otherwise it shall fail !
   Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str()) ? "Ready" : "Failed!");
 
-
-  Serial.print("Setting soft-AP configuration ... ");
-  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
-
   delay(500);
-
+  Serial.println(WiFi.getMode());
   Serial.print("Soft-AP IP address = ");
   Serial.println(WiFi.softAPIP());
   Serial.println(WiFi.softAPmacAddress());
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
+
 
   digitalWrite(ACCESSPOINT_LED, HIGH);
   digitalWrite(STATION_LED, LOW);
 
-  show(true, IPAddress2String(WiFi.softAPIP()), 0, 0);
+  //show(true, IPAddress2String(WiFi.softAPIP()), 0, 0);
   pSettings->beginAsAccessPoint(true);
 }
 
-void setupWiFiManager () {
+void setupWiFiManager() {
   bool networkConnected = false;
 
   digitalWrite(STATION_LED, HIGH);
   digitalWrite(ACCESSPOINT_LED, HIGH);
-
+  Serial.println("a a a");
+ 
+  Serial.println(WiFi.getMode());
+  Serial.println(pWifiSettings->readNetworkSSID());
   String mynetworkssid = pWifiSettings->readNetworkSSID();
   if (mynetworkssid != "") {
-    String mynetworkpass = pWifiSettings->readNetworkPassword();
-    WiFi.mode(WIFI_STA);
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+    String mynetworkpass = pWifiSettings->readNetworkPassword(); 
+    WiFi.mode(WIFI_MODE_STA);
+    delay(1000);  // give time to recover from powerdip after starting WiFi
 
     WiFi.begin(mynetworkssid.c_str(), mynetworkpass.c_str()); 
-
     Serial.print("Connecting to a WiFi Network");
     int toomuch = 30;  //gives 30 seconds to connect to a Wifi network
     while ((WiFi.status() != WL_CONNECTED) && (toomuch > 0))
@@ -258,7 +324,12 @@ void setupWiFiManager () {
       digitalWrite(STATION_LED, HIGH);
       show(true, IPAddress2String(WiFi.localIP()), 0, 0);
       pSettings->beginAsAccessPoint(false);
+
+        Serial.println(WiFi.getMode());
+
     }
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
+
   }
   if (networkConnected == false) {
     // no network found, fall back to access point
@@ -299,6 +370,7 @@ void switchToAccessPoint() {
   initServer();
 
   // switch, so domain-name has to be found in this domain-realm
+  delay(pSettings->WAIT_PERIOD);
   startmDNS();
   // end domain name server check
 }
@@ -313,10 +385,10 @@ void switchToNetwork() {
   setupWiFiManager();
   delay(pSettings->WAIT_PERIOD);
 
-  delay(pSettings->WAIT_PERIOD);
   initServer();
 
   // switch, so domain-name has to be found in this domain-realm
+  delay(pSettings->WAIT_PERIOD);
   startmDNS();
   // end domain name server check
 }
@@ -1079,7 +1151,12 @@ void initWire()
   if (nDevices == 0)
   {
     Serial.println("No devices found");
+    hasI2C = false;
   }
+  else{
+    hasI2C = true;
+  }
+
 
 }
 
@@ -1191,11 +1268,16 @@ void checkSpinValue()
 
 void setup()
 {
+  //WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
   /* It seems to help preventing ESPerror messages with mode(3,6) when
   using a delay */
   initHardware();
+  //init_nvs_security();
   initWire();
-  initOled();
+  if (hasI2C)
+  {
+    initOled();
+  }
   pSettings->bootSettings();
   pWifiSettings->bootWiFi();
 
@@ -1206,7 +1288,7 @@ void setup()
    // get saved setting from EEPROM
   eepromStartModeAP = pSettings->beginAsAccessPoint();
 
-  if (pSettings->beginAsAccessPoint())
+  if ((pSettings->beginAsAccessPoint()) || (pWifiSettings->getNetworkSSID() == ""))
   {
     setupWiFi();        // local network as access point
   }
@@ -1214,9 +1296,9 @@ void setup()
   {
     setupWiFiManager();   // part of local network as station
   }
-
   delay(pSettings->WAIT_PERIOD);
   // first search for domain-name
+
   startmDNS();
   // end domain name server check
 

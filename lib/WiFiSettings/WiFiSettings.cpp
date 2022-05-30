@@ -15,7 +15,8 @@ void WiFiSettings::bootWiFi()
     //if (this->preferences.begin(this->PREFERENCE_NAMESPACE_WIFI, false, this->PREFERENCE_LABEL_WIFI))
     if (this->setNamespace())
     {
-        String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
+        String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
+        //String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
         this->endNamespace();
         if (_password.length() < this->MIN_PASSWORD)
         {
@@ -171,7 +172,12 @@ String WiFiSettings::readAccessPointSSID()
     String result = "";
     if (this->setNamespace())
     {
-        result = this->preferences.getString(this->SSID_ACCESSPOINT, this->ssidAccessPoint);
+        //result = this->preferences.getString(this->SSID_ACCESSPOINT, this->ssidAccessPoint);
+        result = this->preferences.getString(this->SSID_ACCESSPOINT);
+        if (result.length() == 0)
+        {
+            result = this->ssidAccessPoint;
+        }
         this->endNamespace();
     }
     return result;
@@ -182,7 +188,12 @@ String WiFiSettings::readAccessPointPassword()
     String result = "";
     if (this->setNamespace())
     {
-        result = this->preferences.getString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
+        //result = this->preferences.getString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
+        result = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
+        if (result.length() == 0)
+        {
+            result = this->passwordAccessPoint;
+        }
         this->endNamespace();
     }
     return result;
@@ -193,7 +204,14 @@ String WiFiSettings::readNetworkSSID()
     String result = "";
     if (this->setNamespace())
     {
-        result = this->preferences.getString(this->SSID_STATION, this->ssidNetwork);
+        result = this->preferences.getString(this->SSID_STATION);
+        Serial.println(result.length());
+        Serial.println(result.length() == 0);
+        Serial.println(this->ssidNetwork);
+        if (result.length() == 0)
+        {
+            result = this->ssidNetwork;
+        }
         this->endNamespace();
     }
     return result;
@@ -204,7 +222,12 @@ String WiFiSettings::readNetworkPassword()
     String result = "";
     if (this->setNamespace())
     {
-        result = this->preferences.getString(this->PASSWORD_STATION, this->passwordNetwork);
+        //result = this->preferences.getString(this->PASSWORD_STATION, this->passwordNetwork);
+        result = this->preferences.getString(this->PASSWORD_STATION);
+        if (result.length() == 0)
+        {
+            result = this->passwordNetwork;
+        }
         this->endNamespace();
     }
     return result;
