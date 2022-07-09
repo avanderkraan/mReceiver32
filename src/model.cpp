@@ -27,6 +27,8 @@
 #include "soc/rtc_cntl_reg.h"
 // in setup() : WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
+Preferences pref;
+
 #include <nvs.h>
 #include <nvs_flash.h>
 
@@ -42,15 +44,15 @@
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define I2C_SDA 23 // Wire SDA
-#define I2C_SCL 22 // Wire SCL
+#define I2C_SDA GPIO_NUM_1 //23//esp32 // Wire SDA
+#define I2C_SCL GPIO_NUM_0 //22//esp32 // Wire SCL
 
 bool hasI2C = false;
 
-const int motorPin1 = 27; //4;   // IN1
-const int motorPin2 = 26; //5;   // IN2
-const int motorPin3 = 25; //6;   // IN3
-const int motorPin4 = 33; //7;   // IN4
+const int motorPin1 = GPIO_NUM_4; //27;//esp32 //4;   // IN1
+const int motorPin2 = GPIO_NUM_5; //26;//esp32 //5;   // IN2
+const int motorPin3 = GPIO_NUM_6; //25;//esp32 //6;   // IN3
+const int motorPin4 = GPIO_NUM_7;//33;//esp32 //7;   // IN4
 
 // WIFI URL: http://192.168.4.1/ or http://model.local/
 /////////////////////
@@ -59,10 +61,10 @@ const int motorPin4 = 33; //7;   // IN4
 
 // D5 gives troubles when it is high at the start.
 
-const uint8_t BUTTON = 0;           // was D8 // Digital pin to read button-push
+const uint8_t BUTTON = GPIO_NUM_9;           // was D8 // Digital pin to read button-push
 
-const uint8_t ACCESSPOINT_LED = 4; //3;  // was D1 
-const uint8_t STATION_LED = 2;      // was D2
+const uint8_t ACCESSPOINT_LED = GPIO_NUM_3;//4;esp32 //3;  // was D1 
+const uint8_t STATION_LED = GPIO_NUM_10;//2;esp32      // was D2
 
 // variables for reset to STA mode
 const uint16_t NO_STA_COUNTER_MAX = 6000; // with a delay of 50 ms the max pause time is 5 minutes
@@ -141,46 +143,6 @@ void toggleWiFi();
 WebServer server(80);
 WiFiClient wifiClient;
 
-
-esp_err_t nvs_secure_initialize() {
-    static const char *nvs_tag = "nvs";
-    esp_err_t err = ESP_OK;
-
-    // 1. find partition with nvs_keys
-    const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
-                                                                ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS,
-                                                                "nvs_key");
-    if (partition == NULL) {
-        ESP_LOGE(nvs_tag, "Could not locate nvs_key partition. Aborting.");
-        return ESP_FAIL;
-    }
-
-    // 2. read nvs_keys from key partition
-    nvs_sec_cfg_t cfg;
-    if (ESP_OK != (err = nvs_flash_read_security_cfg(partition, &cfg))) {
-        ESP_LOGE(nvs_tag, "Failed to read nvs keys (rc=0x%x)", err);
-        return err;
-    }
-
-    // 3. initialize nvs partition
-    if (ESP_OK != (err = nvs_flash_secure_init(&cfg))) {
-        ESP_LOGE(nvs_tag, "failed to initialize nvs partition (err=0x%x). Aborting.", err);
-        return err;
-    };
-
-    return err;
-}
-
-void init_nvs_security()
-{
-    esp_err_t err = nvs_secure_initialize();
-    if (err != ESP_OK) {
-        ESP_LOGE("main", "Failed to initialize nvs (rc=0x%x). Halting.", err);
-        while(1) { vTaskDelay(100); }
-    }
-}
-
-
 // start Settings and EEPROM stuff
 void saveSettings() {
   pSettings->saveSettings();
@@ -234,9 +196,9 @@ void show(bool clear, String message, int16_t x, int16_t y)
 void setupWiFi(){
   digitalWrite(STATION_LED, HIGH);
   digitalWrite(ACCESSPOINT_LED, HIGH);
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
   WiFi.mode(WIFI_MODE_AP);
+  delay(500);
   Serial.println(WiFi.getMode());
   String myssid = pWifiSettings->readAccessPointSSID();
   String mypass = pWifiSettings->readAccessPointPassword();
@@ -247,7 +209,7 @@ void setupWiFi(){
   Serial.println(WiFi.macAddress());
   if ((myssid == "") || (myssid == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
-    myssid = String("ESP-")+ WiFi.softAPmacAddress();
+    myssid = String("ESP-")+WiFi.macAddress(); // WiFi.softAPmacAddress();
     pWifiSettings->setAccessPointSSID(myssid);
     pWifiSettings->setAccessPointPassword(mypass);
     pWifiSettings->saveAuthorizationAccessPoint();
@@ -256,10 +218,8 @@ void setupWiFi(){
   IPAddress gateway(192,168,4,1);
   IPAddress subnet(255,255,255,0);
 
-  Serial.print("Setting soft-AP ... ");
-  //Serial.println(WiFi.softAPSSID());
+  Serial.println("Setting soft-AP ... ");
 
- 
   Serial.print("Setting soft-AP configuration ... ");
   Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
   
@@ -269,17 +229,16 @@ void setupWiFi(){
   Serial.println(WiFi.softAP(myssid.c_str(),mypass.c_str()) ? "Ready" : "Failed!");
 
   delay(500);
+
   Serial.println(WiFi.getMode());
   Serial.print("Soft-AP IP address = ");
   Serial.println(WiFi.softAPIP());
   Serial.println(WiFi.softAPmacAddress());
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
-
 
   digitalWrite(ACCESSPOINT_LED, HIGH);
   digitalWrite(STATION_LED, LOW);
 
-  //show(true, IPAddress2String(WiFi.softAPIP()), 0, 0);
+  show(true, IPAddress2String(WiFi.softAPIP()), 0, 0);
   pSettings->beginAsAccessPoint(true);
 }
 
@@ -288,16 +247,10 @@ void setupWiFiManager() {
 
   digitalWrite(STATION_LED, HIGH);
   digitalWrite(ACCESSPOINT_LED, HIGH);
-  Serial.println("a a a");
- 
-  Serial.println(WiFi.getMode());
-  Serial.println(pWifiSettings->readNetworkSSID());
   String mynetworkssid = pWifiSettings->readNetworkSSID();
   if (mynetworkssid != "") {
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     String mynetworkpass = pWifiSettings->readNetworkPassword(); 
     WiFi.mode(WIFI_MODE_STA);
-    delay(1000);  // give time to recover from powerdip after starting WiFi
 
     WiFi.begin(mynetworkssid.c_str(), mynetworkpass.c_str()); 
     Serial.print("Connecting to a WiFi Network");
@@ -328,7 +281,6 @@ void setupWiFiManager() {
         Serial.println(WiFi.getMode());
 
     }
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
 
   }
   if (networkConnected == false) {
@@ -350,8 +302,8 @@ void resetWiFiManagerToFactoryDefaults () {
       toomuch = 0;
     }
     Serial.println(String(getValue));
-    delay(3000);
-    Serial.println("waited 3 seconds");
+    delay(5000);
+    Serial.println("waited 5 seconds");
     toomuch -= 1;
   }
 }
@@ -983,7 +935,7 @@ void handleSpinSettings()
       if (_spinMode == "connected")
       {
         pSettings->setRoleModel(_roleModelCode); 
-        if (WiFi.getMode() == WIFI_AP)
+        if (WiFi.getMode() == WIFI_MODE_AP)
         {
           motorSpeedStepper = 0;
         }
@@ -1120,6 +1072,8 @@ void toggleWiFi()
 
 void initWire()
 {
+  //pinMode(I2C_SCL, PULLUP);
+  //pinMode(I2C_SDA, PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   while (!Serial);   // waiting on serial monitor
   Serial.println("\nI2C scanner");
@@ -1278,8 +1232,32 @@ void setup()
   {
     initOled();
   }
+
+  delay(500);
+  Serial.println("boot Settings");
+  delay(500);
   pSettings->bootSettings();
+  Serial.println("booted Settings");
+  delay(500);
+  Serial.println("boot WifiSettings");
   pWifiSettings->bootWiFi();
+  Serial.println("booted WiFiSettings");
+  delay(500);
+
+/*
+delay(2000);
+
+Serial.println(pref.begin("settings",false));
+Serial.println(pref.putFloat("pi",3.1415));
+pref.end();
+delay(1000);
+
+Serial.println(pref.begin("settings",true));
+Serial.println(pref.isKey("pi"));
+Serial.println(pref.getFloat("pi"));
+pref.end();
+delay(1000);
+*/
 
    // see https://forum.arduino.cc/index.php?topic=121654.0 voor circuit brownout
   delay(pSettings->WAIT_PERIOD);
@@ -1348,23 +1326,7 @@ void loop()
 
   // For ESP WebServer
   server.handleClient();
-  
-  /*
-  // test of Preferences, doesn't work proper at this moment (20220420) on esp32c3
-  if (millis() - lastSendMillis > pSettings->getSEND_PERIOD())
-  {
-    preferences1.begin("model");
-    int32_t cnt = preferences1.getInt("test", 9);
-    preferences1.putInt("test", cnt + 123);
-    preferences1.end();
-    Serial.println("in loop");
-    Serial.println(cnt);
-
-      lastSendMillis = millis();
-  }
-  */
-  
-
+ 
   // For handleHTTPClient
   if (WiFi.getMode() == WIFI_STA)
   {
@@ -1389,7 +1351,7 @@ void loop()
   }
 
   // For automatic Reset after loosing WiFi connection in STA mode
-  if ((WiFi.getMode() == WIFI_AP) && (eepromStartModeAP == false))
+  if ((WiFi.getMode() == WIFI_MODE_AP) && (eepromStartModeAP == false))
   {
     if (no_sta_counter < NO_STA_COUNTER_MAX)
     {

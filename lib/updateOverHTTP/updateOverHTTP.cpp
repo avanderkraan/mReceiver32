@@ -14,17 +14,18 @@ String updateOverHTTP(WiFiClient wifiClient, String serverURL, uint16_t serverPo
     HTTPUpdate httpUpdate;
     httpUpdate.rebootOnUpdate(false);
     t_httpUpdate_return ret = httpUpdate.update(wifiClient, serverURL, serverPort, uploadScript, version);
+    delay(200);
     switch(ret) {
         case HTTP_UPDATE_FAILED:
-            //Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+            Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
             result = UPDATEOVERHTTP_FAILED;
             break;
         case HTTP_UPDATE_NO_UPDATES:
-            //Serial.println("[update] Update no Update");
+            Serial.println("[update] Update no Update");
             result = UPDATEOVERHTTP_NO_UPDATE;
             break;
         case HTTP_UPDATE_OK:
-            //Serial.println("[update] Update ok"); // may not be called since we reboot the ESP
+            Serial.println("[update] Update ok"); // may not be called since we reboot the ESP
             result = UPDATEOVERHTTP_OK;
             break;
     }

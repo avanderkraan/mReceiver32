@@ -6,8 +6,8 @@
 class WiFiSettings
 {
 public:
-  const char * PREFERENCE_NAMESPACE_WIFI = "wifi";
-  const char * PREFERENCE_LABEL_WIFI = "nvs";  // seems to be nvs and nothing else for WiFi
+  const char * PREFERENCE_NAMESPACE_WIFI = "wifisettings";
+  const char * PREFERENCE_LABEL_WIFI = "wifisettings";  // seems to be nvs and nothing else for WiFi
   const char * SSID_ACCESSPOINT = "w10";
   const char * PASSWORD_ACCESSPOINT = "w11";
   const char * SSID_STATION = "w12";
