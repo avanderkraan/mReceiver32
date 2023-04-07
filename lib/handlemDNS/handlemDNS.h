@@ -3,7 +3,10 @@
 #include "ESPmDNS.h"
 #include "WiFi.h"
 
-const char * getFirstFreeHostName(const char * hostName);
-bool startmDNS();
-bool _setStationHostname();
+String getMDNSHostname();
+bool setHostname(String hostname);
+void startmDNS();
+void addService(String hostname);
+String findFirstFreeHostname();
+
 #endif

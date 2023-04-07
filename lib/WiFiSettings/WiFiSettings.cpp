@@ -12,7 +12,6 @@ void WiFiSettings::endNamespace()
 
 void WiFiSettings::bootWiFi()
 {
-    //if (this->preferences.begin(this->PREFERENCE_NAMESPACE_WIFI, false, this->PREFERENCE_LABEL_WIFI))
     if (this->setNamespace())
     {
         String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
@@ -23,6 +22,8 @@ void WiFiSettings::bootWiFi()
           this->setAccessPointPassword(this->passwordAccessPoint);
           this->saveAuthorizationAccessPoint();
         }
+        this->passwordNetwork = this->decrypt(this->readNetworkPassword());
+        this->ssidNetwork = this->readNetworkSSID();
     }
 }
 
@@ -40,7 +41,6 @@ size_t WiFiSettings::saveAuthorizationAccessPoint()
         if (this->passwordAccessPoint != this->decrypt(_encrypted_password))
         {
             this->preferences.remove(this->PASSWORD_ACCESSPOINT);
-            //result += this->preferences.putString(this->PASSWORD_ACCESSPOINT, this->passwordAccessPoint);
             result += this->preferences.putString(this->PASSWORD_ACCESSPOINT, this->encrypt(this->passwordAccessPoint));
         }
         this->endNamespace();
@@ -60,10 +60,8 @@ size_t WiFiSettings::saveAuthorizationNetwork()
         }
         String _encrypted_password = this->preferences.getString(this->PASSWORD_STATION);
         if (this->passwordNetwork != this->decrypt(_encrypted_password))
-        //if (this->passwordNetwork != this->preferences.getString(this->PASSWORD_STATION))
         {
             this->preferences.remove(this->PASSWORD_STATION);
-            //result += this->preferences.putString(this->PASSWORD_STATION, this->passwordNetwork);
             result += this->preferences.putString(this->PASSWORD_STATION, this->encrypt(this->passwordNetwork));
         }
         this->endNamespace();
@@ -176,7 +174,6 @@ String WiFiSettings::readAccessPointSSID()
     String result = "";
     if (this->setNamespace())
     {
-        //result = this->preferences.getString(this->SSID_ACCESSPOINT, this->ssidAccessPoint);
         result = this->preferences.getString(this->SSID_ACCESSPOINT);
         if (result.length() == 0)
         {
@@ -228,7 +225,6 @@ String WiFiSettings::readNetworkPassword()
     {
         String _encrypted_password = this->preferences.getString(this->PASSWORD_STATION);
         result = this->decrypt(_encrypted_password);
-        //result = this->preferences.getString(this->PASSWORD_STATION);
         if (result.length() == 0)
         {
             result = this->passwordNetwork;
@@ -240,7 +236,7 @@ String WiFiSettings::readNetworkPassword()
 
 String WiFiSettings::encrypt(String plainText)
 {
-  // method of Dencrypt can only be used once becasue the initialization vector changes with an encryption
+  // method of Dencrypt can only be used once because the initialization vector changes with an encryption
   // leaving this scope takes care of calling the Dencrypt destructor
   Dencrypt dencrypt = Dencrypt();
   return dencrypt.encrypt(plainText);
@@ -248,7 +244,7 @@ String WiFiSettings::encrypt(String plainText)
 
 String WiFiSettings::decrypt(String encryptedText)
 {
-  // method of Dencrypt can only be used once becasue the initialization vector changes with a decryption
+  // method of Dencrypt can only be used once because the initialization vector changes with a decryption
   // leaving this scope takes care of calling the Dencrypt destructor
   Dencrypt dencrypt = Dencrypt();
   return dencrypt.decrypt(encryptedText);

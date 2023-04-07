@@ -7,7 +7,7 @@ const String UPDATEOVERHTTP_FAILED ="[update] Update Failed";
 const String UPDATEOVERHTTP_NO_UPDATE = "[update] No Update";
 const String UPDATEOVERHTTP_OK = "[update] Update ok";
 const String UPDATEOVERHTTP_NO_INTERNET = "[update] No connection with the server";
-const uint32_t WDT_UPDATE_OTA_S = 15;   // see https://github.com/esphome/esphome/pull/4172
+const uint32_t WDT_UPDATE_OTA_S = 30;   // see https://github.com/esphome/esphome/pull/4172
 /* 
 serverURL is the hostname
 serverPort the portnumber

@@ -13,7 +13,7 @@ String updateOverHTTP(WiFiClient wifiClient, String serverURL, uint16_t serverPo
     {
       serverURL = serverURL.substring(pos + 3);  // get rid of protocol
     }
-    Serial.print("set to 60 op lokale computer ");
+    Serial.print("set esp_task_wdt_deinit() to 30 because calling device needs this time");
     //Serial.println(esp_task_wdt_deinit());
     Serial.println(esp_task_wdt_init(WDT_UPDATE_OTA_S, 0) == ESP_OK);
     HTTPUpdate httpUpdate;
@@ -32,13 +32,13 @@ String updateOverHTTP(WiFiClient wifiClient, String serverURL, uint16_t serverPo
         case HTTP_UPDATE_OK:
             Serial.println("[update] Update ok"); // may not be called since we reboot the ESP
             result = UPDATEOVERHTTP_OK;
-            Serial.print("set to 5 ");
+            Serial.print("set to default value: 5 ");
             Serial.println(esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, 0) == ESP_OK);
             break;
     }
   }
   else {
-    //Serial.println("Device must be in station mode");
+    // Device must be in station mode;
     result = UPDATEOVERHTTP_NO_INTERNET;
   }
   return result;

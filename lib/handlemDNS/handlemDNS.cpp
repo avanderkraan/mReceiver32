@@ -1,56 +1,107 @@
 #include "handlemDNS.h"
 
-String firstFreeHostName = "";
+//String firstFreeHostname = "";
 
-const char * getFirstFreeHostName(const char * hostName)
+MDNSResponder myMDNSResponder;
+
+void startmDNS() {
+    String hostname = "model";
+    esp_err_t err = mdns_init();
+    if (err)
+    {
+        printf("MDNS failed: %d\n", err);
+        return;
+    }
+    printf("MDNS started\n");
+    hostname = findFirstFreeHostname();
+    setHostname(hostname);
+    addService(hostname);
+}
+
+void addService(String hostname){
+    uint16_t port = 80;
+    //String instanceName = findFirstFreeHostname();
+    //myMDNSResponder.setInstanceName(instanceName);
+    mdns_service_add(hostname.c_str(), "_http", "_tcp", port, NULL, 0);
+    //mdns_service_instance_name_set("_http", "_tcp", instanceName.c_str());
+}
+
+String getMDNSHostname() {
+    // not working as expected yet
+    // TODO: make this work
+    return WiFi.getHostname();
+}
+
+
+bool setHostname(String hostname)
 {
+    if (hostname) 
+    {
+        uint16_t index = 0;
+        esp_err_t err = mdns_hostname_set(hostname.c_str());
+        String indexedHostname = "";
+        if (err != ESP_OK)
+        {
+            return false;
+        }
+
+        err = mdns_instance_name_set(hostname.c_str());
+        if (err != ESP_OK)
+        {
+            return false;
+        }
+
+
+        if (WiFi.getMode() == WIFI_MODE_STA)
+        {
+            WiFi.setHostname(hostname.c_str());
+            printf("SetStationHostname: Station hostname is set to %s\n", hostname.c_str());
+        }
+        if (WiFi.getMode() == WIFI_MODE_AP)
+        {
+            WiFi.softAPsetHostname(hostname.c_str());
+            printf("SetSoftAPHostname: AP hostname is set to %s\n", hostname.c_str());
+        }
+
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+String findFirstFreeHostname() {
+    String hostname = "model";
+    uint32_t timeout = 1500;
+    String indexedHostname = hostname;
     int index = 0;
-    int nrOfServices = MDNS.queryService("http", "tcp");
-    String indexedHostName = String(hostName);
+    
+    int nrOfServices = myMDNSResponder.queryService("http", "tcp");
+
+    IPAddress ipHost = myMDNSResponder.queryHost(indexedHostname);
+    if (ipHost)
+    {
+        //printf("iphost model  true\n");
+    }
 
     for (int i = 0; i < nrOfServices; i++)
     {
-        indexedHostName = String(hostName) + "-" + String(i);
-        IPAddress ipHost = MDNS.queryHost(indexedHostName);
-        //Serial.println(ipHost.toString());
-        if (ipHost)
+        //printf("hosts %d: %d\n", i, myMDNSResponder.hostname(i));
+        //IPAddress ipHost = myMDNSResponder.queryHost(indexedHostName, timeout);
+        //if (ipHost)
+        if (myMDNSResponder.hostname(i))
         {
+            //printf("iphost true\n");
             index+=1;
         }
     }
-    firstFreeHostName = String(hostName);
-    if (index > 0)
+    indexedHostname = String(hostname);
+    if (index > 1)
     {
-        firstFreeHostName = String(hostName) + "-" + String(index);
+        indexedHostname = String(hostname) + "-" + String(index);
     }
-    return firstFreeHostName.c_str();
+    //printf("name from findfirstfree is: %s\n", indexedHostname);
+    return indexedHostname;
 }
-
-bool startmDNS()
-{
-    bool result = false;
-    if (!MDNS.begin(getFirstFreeHostName("model")))
-    {
-        Serial.println("Error setting up mDNS Responder");
-        while(1) {
-            delay(1000);
-        }
-    }
-    Serial.println("MDNS responder started");
-    //result = (MDNS.addService("http", "tcp", 80) && _setStationHostname());
-    return result;
-}
-
-bool _setStationHostname()
-{
-    bool result = false;
-    if (firstFreeHostName != "") {
-        result = WiFi.hostname(firstFreeHostName);
-    }
-    if (result)
-    {
-        Serial.println("SetStationHostname: Station hostname is set to " + firstFreeHostName);
-    }
-    return false;
-}
-

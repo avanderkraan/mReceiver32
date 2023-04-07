@@ -1,6 +1,5 @@
 #ifndef SETTINGS_H        // To make sure you don't declare the function more than once by including the header multiple times.
 #define SETTINGS_H
-//#include "WiFi.h"         // WiFi Library (you most likely already have this in your sketch)
 #include "Preferences.h"  // used to store and read settings
 
 class Settings
@@ -34,8 +33,8 @@ public:
 private:
   /* 4 bytes to store, version of this firmware */
   uint8_t major = 0;   // max 2^8 = 256
-  uint8_t minor = 0;   // max 2^8 = 256
-  uint16_t patch = 1;  // max 2^16 = 65536
+  uint8_t minor = 1;   // max 2^8 = 256
+  uint16_t patch = 3;  // max 2^16 = 65536
 
   /* data in the non-volatile-storage partition */
   Preferences preferences;
@@ -50,12 +49,12 @@ private:
   uint16_t sendPeriod = 2000;
 
   /* target server, max size = 32 */
-  String targetServer = "http://10.0.0.9"; //"http://www.draaiendemolens.nl";
+  String targetServer = "http://www.draaiendemolens.nl";
   /* factoryTargetServer */
   String factoryTargetServer = "http://www.draaiendemolens.nl";
 
   /* target port */
-  uint16_t targetPort = 9090;  //80;
+  uint16_t targetPort = 80;
   /* factoryTargetPort server */
   uint16_t factoryTargetPort = 80;
 
@@ -113,7 +112,7 @@ public:
   Settings()
   {
     this->preferences = Preferences();
-    //this->initSettings(); // is called through the browser
+    // this->initSettings(); // is called through the browser
     // call bootSettings()) from setup() to initialize Settings data
   };
 

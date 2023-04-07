@@ -1,6 +1,6 @@
 #ifndef HANDLEWEBSERVER_H    // To make sure you don't declare the function more than once by including the header multiple times.
 #define HANDLEWEBSERVER_H
-#include "WebServer.h"       //Local WebServer used to serve the configuration portal
+#include "WebServer.h"       // Local WebServer used to serve the configuration portal
 #include "settings.h"
 #include "WiFiSettings.h"
 #include "handleText.h"

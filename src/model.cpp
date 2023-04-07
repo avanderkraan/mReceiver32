@@ -4,8 +4,8 @@
 #include "WebServer.h"     // Local WebServer used to serve the configuration portal
 
 #include "handlemDNS.h"
-#include "ESPmDNS.h"
-#include <WiFiUdp.h>
+//#include "ESPmDNS.h"
+//#include <WiFiUdp.h>
 
 #include "updateOverHTTP.h"
 
@@ -29,9 +29,9 @@
 // in setup() : WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
 // debug, zie setup()
-#include "esp_flash_encrypt.h"
-#include <nvs.h>
-#include <nvs_flash.h>
+//#include "esp_flash_encrypt.h"
+//#include <nvs.h>
+//#include <nvs_flash.h>
 
 Preferences pref;
 
@@ -127,7 +127,7 @@ bool detectButtonFlag = false;
 // detectUpdateFlag is True is an update from the server is requested
 bool detectUpdateFlag = false;
 
-// updateSucceeded is true is the update succeeded or if a restart is asked, so a restart can be done
+// updateSucceeded is true if the update succeeded or if a restart is asked, so a restart can be done
 bool updateSucceeded = false;
 
 // detectInfoRequest is True if info is requested by the server
@@ -209,7 +209,6 @@ void setupWiFiAsAccessPoint(){
   digitalWrite(ACCESSPOINT_LED, HIGH);
 
   WiFi.mode(WIFI_MODE_AP);
-  delay(500);
   Serial.println(WiFi.getMode());
   String myssid = pWifiSettings->readAccessPointSSID();
   String mypass = pWifiSettings->readAccessPointPassword();
@@ -218,6 +217,7 @@ void setupWiFiAsAccessPoint(){
   Serial.println(mypass);
   Serial.println(WiFi.softAPmacAddress());
   Serial.println(WiFi.macAddress());
+
   if ((myssid == "") || (myssid == "ESP-") || (WiFi.softAPSSID().startsWith("ESP_")))
   {
     myssid = String("ESP-")+WiFi.macAddress(); // WiFi.softAPmacAddress();
@@ -475,7 +475,7 @@ String updateFirmware(String requestedVersion)
   String version = pSettings->getFirmwareVersion();
   String result = updateOverHTTP(wifiClient, serverUrl, serverPort, uploadScript, version);
 
-  if (result ==UPDATEOVERHTTP_OK)
+  if (result == UPDATEOVERHTTP_OK)
   {
     updateSucceeded = true;
   }
@@ -483,7 +483,7 @@ String updateFirmware(String requestedVersion)
   {
     // restore settings
     buttonInterruptOn();
-    if (WiFi.getMode() == WIFI_STA)
+    if (WiFi.getMode() == WIFI_MODE_STA)
     {
       digitalWrite(STATION_LED, HIGH);
       digitalWrite(ACCESSPOINT_LED, LOW);
@@ -518,7 +518,7 @@ void handleVersion() {
     // search name 
     if (name == "update")
     {
-      if (WiFi.getMode() == WIFI_STA)
+      if (WiFi.getMode() == WIFI_MODE_STA)
       {
         detectInfoRequest = true;
       }
@@ -606,12 +606,15 @@ void handleRestart() {
 }
 
 void getMDNS() {
-  String firstFreeHostname = String(getFirstFreeHostName("model"));
+  //String firstFreeHostname = String(getFirstFreeHostName("model"));
+  //String firstFreeHostname = findFirstFreeHostname();
+  String hostname = getMDNSHostname();
 
   // used to answer a xhr call from the browser that is connected to the server
   String result = "";
 
-  result += firstFreeHostname;
+  //result += firstFreeHostname;
+  result += hostname;
   result += "<";
   result += pSettings->getRoleModel();
   result += ">";
@@ -1059,8 +1062,8 @@ String requestInterval = getValueFromJSON("t", responseData);
 
 void toggleWiFi()
 {
-  // only toggle by using the button, not saving in EEPROM
   pSettings->beginAsAccessPoint(!  pSettings->beginAsAccessPoint());  // toggle
+  pSettings->saveStartAsAccessPoint();                                // save boolean startAsAccessPoint
   if (pSettings->beginAsAccessPoint() == true)
   {
     setupWiFiAsAccessPoint();           // local network as access point
@@ -1231,7 +1234,8 @@ void setup()
   using a delay */
   initHardware();
   //init_nvs_security();
-  delay(500);
+  delay(pSettings->WAIT_PERIOD);
+  printf("initHardware via printf ready");
   Serial.println("initHardware ready");
   initWire();
   if (hasI2C)
@@ -1239,70 +1243,35 @@ void setup()
     initOled();
   }
 
-  
-  // debug
-  if (esp_flash_encryption_enabled() == true)
-    {
-        printf("Flash encryption enabled\n");
-//        esp_partition_iterator_t partitions_it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY,NULL);
-    }
-    else
-    {
-        printf("Flash encryption disabled\n"); 
-    }
-
-
-/*
-delay(2000);
-printf("starting settings of pi\n");
-printf("%b\n", pref.begin("nvs_settings",false));
-printf("%b\n", pref.putFloat("pi",3.1415));
-pref.end();
-delay(1000);
-
-Serial.println(pref.begin("nvs_settings",true));
-Serial.println(pref.isKey("pi"));
-printf("%f\n",pref.getFloat("pi"));
-pref.end();
-printf("ending settings of pi\n");
-delay(1000);
-
-
-  delay(500);
-  */
-  /*
-  nvs_sec_cfg_t* cfg;
-  const esp_partition_t *this_p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,ESP_PARTITION_SUBTYPE_DATA_NVS,"settings");
-  esp_err_t err = nvs_flash_read_security_cfg(this_p, cfg);
-  printf("%d", err);
-  nvs_flash_secure_init_partition("settings", cfg);
-  */
   printf("boot Settings\n");
-  delay(500);
+  delay(pSettings->WAIT_PERIOD);
   pSettings->bootSettings();
   printf("booted Settings\n");
-  delay(500);
+  delay(pSettings->WAIT_PERIOD);
   printf("boot WifiSettings\n");
   pWifiSettings->bootWiFi();
   printf("booted WiFiSettings\n");
-  delay(500);
+  delay(pSettings->WAIT_PERIOD);
 
 
    // see https://forum.arduino.cc/index.php?topic=121654.0 voor circuit brownout
-  delay(pSettings->WAIT_PERIOD);
+  //delay(pSettings->WAIT_PERIOD);
   // use EITHER setupWiFi OR setupWiFiManager
-  
-   // get saved setting from EEPROM
+
+  // get saved setting from Memory
   eepromStartModeAP = pSettings->beginAsAccessPoint();
 
-  if ((pSettings->beginAsAccessPoint()) || (pWifiSettings->getNetworkSSID() == ""))
+  delay(pSettings->WAIT_PERIOD);
+  
+  if ((pSettings->beginAsAccessPoint() == true) || (pWifiSettings->getNetworkSSID() == ""))
   {
     setupWiFiAsAccessPoint();        // local network as access point
   }
   else
   {
-    setupWiFiAsStation();   // part of local network as station
+    setupWiFiAsStation();            // part of local network as station
   }
+
   delay(pSettings->WAIT_PERIOD);
   // first search for domain-name
 
@@ -1325,6 +1294,8 @@ delay(1000);
 
 void loop()
 {
+  // update should be run on every loop
+
   if (detectUpdateFlag == true)
   {
     String result = updateFirmware("latest");
@@ -1357,9 +1328,9 @@ void loop()
   server.handleClient();
  
   // For handleHTTPClient
-  if (WiFi.getMode() == WIFI_STA)
+  if (WiFi.getMode() == WIFI_MODE_STA)
   {
-    /* send data to target server using ESP HTTPClient */
+    // send data to target server using ESP HTTPClient 
     if (millis() - lastSendMillis > pSettings->getSendPeriod())
     {
 
@@ -1399,5 +1370,11 @@ void loop()
     myStepper.setSpeed(0);
   }
   myStepper.runSpeed();
+
+  // delay(1000);
+  // digitalWrite(ACCESSPOINT_LED,HIGH);
+  // delay(1000);
+  // digitalWrite(ACCESSPOINT_LED,LOW);
+   
 
 }

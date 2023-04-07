@@ -1,21 +1,21 @@
 #include "settings.h"
 
 /*
-Char	        putChar(const char* key, int8_t value)
-Unsigned Char	putUChar(const char* key, int8_t value)
-Short	        putShort(const char* key, int16_t value)
+Char	          putChar(const char* key, int8_t value)
+Unsigned Char	  putUChar(const char* key, int8_t value)
+Short	          putShort(const char* key, int16_t value)
 Unsigned Short	putUShort(const char* key, uint16_t value)
 Int	            putInt(const char* key, int32_t value)
-Unsigned Int	putUInt(const char* key, uint32_t value)
-Long	        putLong(const char* key, int32_t value)
-Unsigned Long	putULong(const char* key, uint32_t value)
+Unsigned Int	  putUInt(const char* key, uint32_t value)
+Long	          putLong(const char* key, int32_t value)
+Unsigned Long  	putULong(const char* key, uint32_t value)
 Long64	        putLong64(const char* key, int64_t value)
 Unsigned Long64	putULong64(const char* key, uint64_t value)
-Float	        putFloat(const char* key, const float_t value)
+Float	          putFloat(const char* key, const float_t value)
 Double	        putDouble(const char* key, const double_t value)
-Bool	        putBool(const char* key, const bool value)
+Bool	          putBool(const char* key, const bool value)
 String	        putString(const char* key, const String value)
-Bytes	        putBytes(const char* key, const void* value, size_t len)
+Bytes	          putBytes(const char* key, const void* value, size_t len)
 */
 
 bool Settings::setNamespace()
@@ -31,8 +31,8 @@ void Settings::endNamespace()
 void Settings::bootSettings()
 {
 // this->preferences.begin(this->PREFERENCE_NAMESPACE_SETTINGS, false, this->PREFERENCE_LABEL_SETTINGS);  // partition label?
-    this->setupPreferences();
     this->setupUpdatedFirmware();
+    this->setupPreferences();
 }
 
 String Settings::getFirmwareVersion()
@@ -209,6 +209,7 @@ size_t Settings::setupPreferences()
 size_t Settings::setupUpdatedFirmware()
 {
     size_t result = 0;
+
     if (this->isUpdated())
     {
         if (this->setNamespace())
@@ -259,9 +260,9 @@ bool Settings::isUpdated() {
         currentMajor = this->preferences.getUChar(this->MAJOR);
         currentMinor = this->preferences.getUChar(this->MINOR);
         currentPatch = this->preferences.getUShort(this->PATCH);
-        
-        result = this->major != currentMajor &&
-                 this->minor != currentMinor &&
+
+        result = this->major != currentMajor ||
+                 this->minor != currentMinor ||
                  this->patch != currentPatch;
         this->endNamespace();
     }
