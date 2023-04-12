@@ -1253,7 +1253,6 @@ void setup()
   printf("booted WiFiSettings\n");
   delay(pSettings->WAIT_PERIOD);
 
-
    // see https://forum.arduino.cc/index.php?topic=121654.0 voor circuit brownout
   //delay(pSettings->WAIT_PERIOD);
   // use EITHER setupWiFi OR setupWiFiManager

@@ -12,19 +12,17 @@ void WiFiSettings::endNamespace()
 
 void WiFiSettings::bootWiFi()
 {
-    if (this->setNamespace())
-    {
-        String _password = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
-        this->endNamespace();
-        if (_password.length() < this->MIN_PASSWORD)
-        {
-          this->setAccessPointSSID(this->ssidAccessPoint);
-          this->setAccessPointPassword(this->passwordAccessPoint);
-          this->saveAuthorizationAccessPoint();
-        }
-        this->passwordNetwork = this->decrypt(this->readNetworkPassword());
-        this->ssidNetwork = this->readNetworkSSID();
-    }
+    String _accessPointSSID = this->readAccessPointSSID();
+    String _accessPointPassword = this->readAccessPointPassword();
+    this->setAccessPointSSID(_accessPointSSID);
+    this->setAccessPointPassword(_accessPointPassword);
+    this->saveAuthorizationAccessPoint();
+
+    String _networkSSID = this->readNetworkSSID();
+    String _networkPassword = this->readNetworkPassword();
+    this->setNetworkSSID(_networkSSID);
+    this->setNetworkPassword(_networkPassword);
+    this->saveAuthorizationNetwork();
 }
 
 size_t WiFiSettings::saveAuthorizationAccessPoint()
@@ -187,16 +185,18 @@ String WiFiSettings::readAccessPointSSID()
 String WiFiSettings::readAccessPointPassword()
 {
     String result = "";
+    String _encrypted_password = "";
     if (this->setNamespace())
     {
-        String _encrypted_password = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
-        result = this->decrypt(_encrypted_password);
-        if (result.length() == 0)
+        _encrypted_password = this->preferences.getString(this->PASSWORD_ACCESSPOINT);
+        this->endNamespace();
+        if (_encrypted_password.length() == 0)     // first time, no decryption needed
         {
             result = this->passwordAccessPoint;
+            return result;
         }
-        this->endNamespace();
     }
+    result = this->decrypt(_encrypted_password);
     return result;
 }
 
@@ -206,9 +206,6 @@ String WiFiSettings::readNetworkSSID()
     if (this->setNamespace())
     {
         result = this->preferences.getString(this->SSID_STATION);
-        Serial.println(result.length());
-        Serial.println(result.length() == 0);
-        Serial.println(this->ssidNetwork);
         if (result.length() == 0)
         {
             result = this->ssidNetwork;
@@ -221,15 +218,21 @@ String WiFiSettings::readNetworkSSID()
 String WiFiSettings::readNetworkPassword()
 {
     String result = "";
+    String _encrypted_password = "";
     if (this->setNamespace())
     {
-        String _encrypted_password = this->preferences.getString(this->PASSWORD_STATION);
+        _encrypted_password = this->preferences.getString(this->PASSWORD_STATION);
+        this->endNamespace();
+        if (_encrypted_password.length() == 0)     // first time, no decryption needed
+        {
+            result = this->passwordNetwork;
+            return result;
+        }
         result = this->decrypt(_encrypted_password);
         if (result.length() == 0)
         {
             result = this->passwordNetwork;
         }
-        this->endNamespace();
     }
     return result;
 }

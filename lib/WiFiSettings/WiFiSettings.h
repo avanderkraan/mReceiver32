@@ -32,7 +32,7 @@ private:
   /* minumum length of password string, excluding NULL character */
   const uint8_t MIN_PASSWORD = 8;
 
-  /* maximun length of password string, excluding NULL character */
+  /* maximum length of password string, excluding NULL character */
   const uint8_t MAX_PASSWORD = 32;
   
   /* SSID */
