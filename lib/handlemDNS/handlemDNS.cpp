@@ -88,12 +88,8 @@ String findFirstFreeHostname() {
 
     for (int i = 0; i < nrOfServices; i++)
     {
-        //printf("hosts %d: %d\n", i, myMDNSResponder.hostname(i));
-        //IPAddress ipHost = myMDNSResponder.queryHost(indexedHostName, timeout);
-        //if (ipHost)
         if (myMDNSResponder.hostname(i))
         {
-            //printf("iphost true\n");
             index+=1;
         }
     }
@@ -102,6 +98,5 @@ String findFirstFreeHostname() {
     {
         indexedHostname = String(hostname) + "-" + String(index);
     }
-    //printf("name from findfirstfree is: %s\n", indexedHostname);
     return indexedHostname;
 }

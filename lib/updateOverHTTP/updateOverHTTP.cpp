@@ -22,7 +22,7 @@ String updateOverHTTP(WiFiClient wifiClient, String serverURL, uint16_t serverPo
     delay(200);
     switch(ret) {
         case HTTP_UPDATE_FAILED:
-            Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+            Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
             result = UPDATEOVERHTTP_FAILED;
             break;
         case HTTP_UPDATE_NO_UPDATES:

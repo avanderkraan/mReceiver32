@@ -335,6 +335,7 @@ void switchToAccessPoint() {
   // switch, so domain-name has to be found in this domain-realm
   delay(pSettings->WAIT_PERIOD);
   startmDNS();
+  delay(pSettings->WAIT_PERIOD);
   // end domain name server check
 }
 
@@ -353,6 +354,7 @@ void switchToNetwork() {
   // switch, so domain-name has to be found in this domain-realm
   delay(pSettings->WAIT_PERIOD);
   startmDNS();
+  delay(pSettings->WAIT_PERIOD);
   // end domain name server check
 }
 
@@ -1235,7 +1237,7 @@ void setup()
   initHardware();
   //init_nvs_security();
   delay(pSettings->WAIT_PERIOD);
-  printf("initHardware via printf ready");
+  printf("initHardware via printf ready\n");
   Serial.println("initHardware ready");
   initWire();
   if (hasI2C)
