@@ -241,7 +241,7 @@ size_t Settings::saveSettings()
         result += this->preferences.putChar(this->ROLEMODELRPM, this->roleModelRPM);
         result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->stepsPerRevolution);
         result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->maxSpeed);
-        result += this->preferences.putUChar(this->DIRECTION, this->direction);
+        result += this->preferences.putChar(this->DIRECTION, this->direction);
         result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
         result += this->preferences.putString(this->DEVICE_KEY, this->deviceKey);
         this->endNamespace();
@@ -312,7 +312,7 @@ size_t Settings::initSettings()
         result += this->preferences.putChar(this->ROLEMODELRPM, this->roleModelRPM);
         result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->factoryStepsPerRevolution);
         result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->factoryMaxSpeed);
-        result += this->preferences.putBool(this->DIRECTION, this->factoryDirection);
+        result += this->preferences.putChar(this->DIRECTION, this->factoryDirection);
         result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->factoryMotorInterfaceType);
         result += this->preferences.putString(this->DEVICE_KEY, this->factoryDeviceKey);
 
@@ -339,7 +339,7 @@ bool Settings::getSettings()
         this->roleModelRPM = this->preferences.getChar(this->ROLEMODELRPM);
         this->stepsPerRevolution = this->preferences.getUShort(this->STEPS_PER_REVOLUTION);
         this->maxSpeed = this->preferences.getUShort(this->MAXIMUM_SPEED);
-        this->direction = this->preferences.getBool(this->DIRECTION);
+        this->direction = this->preferences.getChar(this->DIRECTION);
         this->motorInterfaceType = this->preferences.getUChar(this->MOTOR_INTERFACE_TYPE);
         this->deviceKey = this->preferences.getString(this->DEVICE_KEY);
 
@@ -429,7 +429,7 @@ size_t Settings::saveMotorSettings()
     {
         result += this->preferences.putUShort(this->STEPS_PER_REVOLUTION, this->stepsPerRevolution);
         result += this->preferences.putUShort(this->MAXIMUM_SPEED, this->maxSpeed);
-        result += this->preferences.putBool(this->DIRECTION, this->direction);
+        result += this->preferences.putChar(this->DIRECTION, this->direction);
         result += this->preferences.putUChar(this->MOTOR_INTERFACE_TYPE, this->motorInterfaceType);
         this->endNamespace();
     }
